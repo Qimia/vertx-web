@@ -31,7 +31,7 @@ public class ApolloWSMessageImpl implements ApolloWSMessage {
   private final ApolloWSMessageType type;
   private final JsonObject content;
   private final Object connectionParams;
-  private Future<Object> future;
+  private Future<JsonObject> future;
 
   public ApolloWSMessageImpl(ServerWebSocket serverWebSocket, ApolloWSMessageType type, JsonObject content, Object connectionParams) {
     this.serverWebSocket = serverWebSocket;
@@ -61,7 +61,7 @@ public class ApolloWSMessageImpl implements ApolloWSMessage {
   }
 
   @Override
-  public void setHandshake(Future<Object> future) {
+  public void setHandshake(Future<JsonObject> future) {
     if (type != ApolloWSMessageType.CONNECTION_INIT) {
       throw new IllegalStateException("setHandshake method can only be used on a message of type CONNECTION_INIT");
     }
@@ -71,7 +71,7 @@ public class ApolloWSMessageImpl implements ApolloWSMessage {
   }
 
   @Override
-  public synchronized Future<Object> future() {
+  public synchronized Future<JsonObject> future() {
     return future;
   }
 }

@@ -59,7 +59,7 @@ class ApolloWSConnectionHandler {
   private final Vertx vertx;
   private final Executor ctxExecutor;
   private final ConcurrentMap<String, Subscription> subscriptions;
-  private final AtomicReference<Future<Object>> futureRef;
+  private final AtomicReference<Future<JsonObject>> futureRef;
 
   ApolloWSConnectionHandler(ApolloWSHandlerImpl apolloWSHandler, Context context, ServerWebSocket serverWebSocket) {
     this.apolloWSHandler = apolloWSHandler;

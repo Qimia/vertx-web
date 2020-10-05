@@ -52,13 +52,13 @@ public interface ApolloWSMessage {
   /**
    * Apollo handler will reply to user only when provided future completes.
    * Handshake can only be set for message of type {@link ApolloWSMessageType#CONNECTION_INIT}.
-   * Resulting {@link Object} will be available using {@link ApolloWSMessage#connectionParams()} method
+   * Resulting {@link JsonObject} will be available using {@link ApolloWSMessage#connectionParams()} method
    * on all subsequent messages of type {@link ApolloWSMessageType#START}.
    */
-  void setHandshake(Future<Object> future);
+  void setHandshake(Future<JsonObject> future);
 
   /**
    * @return the future set by {@link ApolloWSMessage#setHandshake(Future)}
    */
-  Future<Object> future();
+  Future<JsonObject> future();
 }

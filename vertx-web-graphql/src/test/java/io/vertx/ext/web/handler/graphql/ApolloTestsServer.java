@@ -61,7 +61,7 @@ public class ApolloTestsServer extends AbstractVerticle {
     router.route().handler(CorsHandler.create("*").allowedMethods(EnumSet.of(GET, POST)));
     router.route("/graphql").handler(ApolloWSHandler.create(setupWsGraphQL()).messageHandler(message -> {
       if (message.type().equals(ApolloWSMessageType.CONNECTION_INIT)) {
-        Promise<Object> promise = Promise.promise();
+        Promise<JsonObject> promise = Promise.promise();
         message.setHandshake(promise.future());
         JsonObject payload = message.content().getJsonObject("payload");
         if (payload != null && payload.containsKey("rejectMessage")) {
