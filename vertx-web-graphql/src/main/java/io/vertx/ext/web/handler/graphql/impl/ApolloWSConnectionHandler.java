@@ -19,6 +19,7 @@ package io.vertx.ext.web.handler.graphql.impl;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -58,6 +59,7 @@ class ApolloWSConnectionHandler {
   private final Vertx vertx;
   private final Executor ctxExecutor;
   private final ConcurrentMap<String, Subscription> subscriptions;
+  private final AtomicReference<Future<Object>> futureRef;
 
   ApolloWSConnectionHandler(ApolloWSHandlerImpl apolloWSHandler, Context context, ServerWebSocket serverWebSocket) {
     this.apolloWSHandler = apolloWSHandler;
@@ -65,6 +67,7 @@ class ApolloWSConnectionHandler {
     this.ctxExecutor = command -> context.runOnContext(v -> command.run());
     this.serverWebSocket = serverWebSocket;
     subscriptions = new ConcurrentHashMap<>();
+    futureRef = new AtomicReference<>(Future.succeededFuture(null));
   }
 
   void handleConnection() {
@@ -95,7 +98,7 @@ class ApolloWSConnectionHandler {
       return;
     }
 
-    ApolloWSMessage message = new ApolloWSMessageImpl(serverWebSocket, type, jsonObject);
+    ApolloWSMessage message = new ApolloWSMessageImpl(serverWebSocket, type, jsonObject, null);
 
     Handler<ApolloWSMessage> mh = apolloWSHandler.getMessageHandler();
     if (mh != null) {
@@ -104,13 +107,35 @@ class ApolloWSConnectionHandler {
 
     switch (type) {
       case CONNECTION_INIT:
-        connect();
+        if (message.future() != null) {
+          this.futureRef.set(message.future());
+        } else {
+          this.futureRef.set(Future.succeededFuture(null));
+        }
+        this.futureRef.get().onComplete(ar -> {
+          if (ar.succeeded()) {
+            connect();
+          } else {
+            sendMessage(opId, CONNECTION_ERROR, ar.cause().getMessage());
+            vertx.setTimer(10, timeout -> serverWebSocket.close((short)1011));
+            this.futureRef.set(Future.succeededFuture(null));
+          }
+        });
         break;
       case CONNECTION_TERMINATE:
         serverWebSocket.close();
+        this.futureRef.set(Future.succeededFuture(null));
         break;
       case START:
-        start(message);
+        this.futureRef.get().onComplete(ar -> {
+          if (ar.succeeded()) {
+            ApolloWSMessage messageWithParams = new ApolloWSMessageImpl(serverWebSocket, type, jsonObject, ar.result());
+            start(messageWithParams);
+          } else {
+            sendMessage(opId, ERROR, ar.cause().getMessage());
+            stop(opId);
+          }
+        });
         break;
       case STOP:
         stop(opId);
